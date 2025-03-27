@@ -1,7 +1,7 @@
 # 💬 Chat Application  
 
 ## 🚀 Live Demo  
-[Click here to visit the live website]((https://chat-application-o1e2.onrender.com))  
+[Click here to visit the live website](https://chat-application-o1e2.onrender.com)
 
 ## 📌 About the Project  
 This is a real-time chat application built using modern web technologies. It provides users with a seamless and responsive chatting experience.  
