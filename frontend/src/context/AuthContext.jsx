@@ -4,11 +4,24 @@ export const AuthContext = createContext();
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const useAuthContext = () => {
-	return useContext(AuthContext);
+  return useContext(AuthContext);
 };
 
 export const AuthContextProvider = ({ children }) => {
-	const [authUser, setAuthUser] = useState(JSON.parse(localStorage.getItem("chat-user")) || null);
+  const [authUser, setAuthUser] = useState(() => {
+    try {
+      const user = localStorage.getItem("chat-user");
+      return user ? JSON.parse(user) : null;
+    } catch (error) {
+      console.error("Error parsing user from localStorage:", error);
+      localStorage.removeItem("chat-user");
+      return null;
+    }
+  });
 
-	return <AuthContext.Provider value={{ authUser, setAuthUser }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ authUser, setAuthUser }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
