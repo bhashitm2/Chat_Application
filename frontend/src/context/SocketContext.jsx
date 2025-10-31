@@ -5,37 +5,56 @@ import io from "socket.io-client";
 const SocketContext = createContext();
 
 export const useSocketContext = () => {
-	return useContext(SocketContext);
+  return useContext(SocketContext);
 };
 
 export const SocketContextProvider = ({ children }) => {
-	const [socket, setSocket] = useState(null);
-	const [onlineUsers, setOnlineUsers] = useState([]);
-	const { authUser } = useAuthContext();
+  const [socket, setSocket] = useState(null);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const { authUser } = useAuthContext();
 
-	useEffect(() => {
-		if (authUser) {
-			const socket = io("https://chat-app-yt.onrender.com", {
-				query: {
-					userId: authUser._id,
-				},
-			});
+  useEffect(() => {
+    if (authUser) {
+      const socket = io("http://localhost:5000", {
+        query: {
+          userId: authUser._id,
+        },
+        transports: ["websocket", "polling"],
+      });
 
-			setSocket(socket);
+      setSocket(socket);
 
-			// socket.on() is used to listen to the events. can be used both on client and server side
-			socket.on("getOnlineUsers", (users) => {
-				setOnlineUsers(users);
-			});
+      // socket.on() is used to listen to the events. can be used both on client and server side
+      socket.on("getOnlineUsers", (users) => {
+        setOnlineUsers(users);
+      });
 
-			return () => socket.close();
-		} else {
-			if (socket) {
-				socket.close();
-				setSocket(null);
-			}
-		}
-	}, [authUser]);
+      socket.on("connect_error", (error) => {
+        console.error("Socket connection error:", error);
+      });
 
-	return <SocketContext.Provider value={{ socket, onlineUsers }}>{children}</SocketContext.Provider>;
+      socket.on("disconnect", (reason) => {
+        console.log("Socket disconnected:", reason);
+      });
+
+      return () => {
+        socket.off("getOnlineUsers");
+        socket.off("connect_error");
+        socket.off("disconnect");
+        socket.close();
+      };
+    } else {
+      if (socket) {
+        socket.close();
+        setSocket(null);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authUser]);
+
+  return (
+    <SocketContext.Provider value={{ socket, onlineUsers }}>
+      {children}
+    </SocketContext.Provider>
+  );
 };
