@@ -2,6 +2,15 @@ import bcrypt from "bcryptjs";
 import User from "../models/user.model.js";
 import generateTokenAndSetCookie from "../utils/generateToken.js";
 
+const generateSecretKey = () => {
+	const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	let result = "";
+	for (let i = 0; i < 6; i++) {
+		result += characters.charAt(Math.floor(Math.random() * characters.length));
+	}
+	return result;
+};
+
 export const signup = async (req, res) => {
 	try {
 		const { fullName, username, password, confirmPassword, gender } = req.body;
@@ -21,9 +30,21 @@ export const signup = async (req, res) => {
 		const hashedPassword = await bcrypt.hash(password, salt);
 
 		// https://avatar-placeholder.iran.liara.run/
+		// FALLBACK: https://ui-avatars.com/ due to DNS blocking issues with liara.run
 
-		const boyProfilePic = `https://avatar.iran.liara.run/public/boy?username=${username}`;
-		const girlProfilePic = `https://avatar.iran.liara.run/public/girl?username=${username}`;
+		const boyProfilePic = `https://ui-avatars.com/api/?name=${username}&background=random&color=fff`;
+		const girlProfilePic = `https://ui-avatars.com/api/?name=${username}&background=random&color=fff`;
+
+		let secretKey = generateSecretKey();
+		let isKeyUnique = false;
+		while (!isKeyUnique) {
+			const existingUser = await User.findOne({ secretKey });
+			if (!existingUser) {
+				isKeyUnique = true;
+			} else {
+				secretKey = generateSecretKey();
+			}
+		}
 
 		const newUser = new User({
 			fullName,
@@ -31,6 +52,8 @@ export const signup = async (req, res) => {
 			password: hashedPassword,
 			gender,
 			profilePic: gender === "male" ? boyProfilePic : girlProfilePic,
+			secretKey,
+			contacts: [],
 		});
 
 		if (newUser) {
@@ -43,6 +66,8 @@ export const signup = async (req, res) => {
 				fullName: newUser.fullName,
 				username: newUser.username,
 				profilePic: newUser.profilePic,
+				secretKey: newUser.secretKey,
+				contacts: newUser.contacts,
 			});
 		} else {
 			res.status(400).json({ error: "Invalid user data" });
@@ -63,6 +88,30 @@ export const login = async (req, res) => {
 			return res.status(400).json({ error: "Invalid username or password" });
 		}
 
+
+		// Check for legacy users without secretKey
+		if (!user.secretKey) {
+			let secretKey = generateSecretKey();
+			let isKeyUnique = false;
+			while (!isKeyUnique) {
+				const existingUser = await User.findOne({ secretKey });
+				if (!existingUser) {
+					isKeyUnique = true;
+				} else {
+					secretKey = generateSecretKey();
+				}
+			}
+			user.secretKey = secretKey;
+			user.contacts = user.contacts || [];
+			await user.save();
+		}
+
+		// FIX: Auto-repair broken profile pictures from liara.run
+		if (user.profilePic.includes("liara.run")) {
+			user.profilePic = `https://ui-avatars.com/api/?name=${user.username}&background=random&color=fff`;
+			await user.save();
+		}
+
 		generateTokenAndSetCookie(user._id, res);
 
 		res.status(200).json({
@@ -70,9 +119,11 @@ export const login = async (req, res) => {
 			fullName: user.fullName,
 			username: user.username,
 			profilePic: user.profilePic,
+			secretKey: user.secretKey,
+			contacts: user.contacts,
 		});
 	} catch (error) {
-		console.log("Error in login controller", error.message);
+		console.error("Error in login controller:", error);
 		res.status(500).json({ error: "Internal Server Error" });
 	}
 };
