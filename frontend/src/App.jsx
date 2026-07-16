@@ -5,6 +5,7 @@ import Login from "./pages/login/Login";
 import SignUp from "./pages/signup/SignUp";
 import { Toaster } from "react-hot-toast";
 import { useAuthContext } from "./context/AuthContext";
+import CallOverlay from "./components/calls/CallOverlay";
 
 function App() {
 	const { authUser } = useAuthContext();
@@ -15,6 +16,7 @@ function App() {
 				<Route path='/login' element={authUser ? <Navigate to='/' /> : <Login />} />
 				<Route path='/signup' element={authUser ? <Navigate to='/' /> : <SignUp />} />
 			</Routes>
+			<CallOverlay />
 			<Toaster />
 		</div>
 	);

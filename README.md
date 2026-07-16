@@ -9,6 +9,9 @@ A full-stack real-time chat application built with the MERN stack.
 - 🌟 Tech stack: MERN + Socket.io + TailwindCSS + Daisy UI
 - 🎃 Authentication && Authorization with JWT
 - 👾 Real-time messaging with Socket.io
+- 📸 Share photos and videos (with optional captions)
+- 🎤 Record and send voice notes
+- 📞 Voice calls and 📹 video calls (WebRTC, peer-to-peer with Socket.io signaling)
 - 🚀 Online user status (Socket.io and React Context)
 - 👌 Global state management with Zustand
 - 🐞 Error handling both on the server and on the client

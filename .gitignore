@@ -14,6 +14,12 @@ dist-ssr
 
 .env
 
+# uploaded chat media
+uploads
+
+# local Claude Code settings (personal permissions, not shared)
+.claude/settings.local.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

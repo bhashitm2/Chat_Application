@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import useGetMessages from "../../hooks/useGetMessages";
 import MessageSkeleton from "../skeletons/MessageSkeleton";
 import Message from "./Message";
@@ -7,23 +8,30 @@ import useListenMessages from "../../hooks/useListenMessages";
 const Messages = () => {
 	const { messages, loading } = useGetMessages();
 	useListenMessages();
-	const lastMessageRef = useRef();
+	const bottomRef = useRef();
 
 	useEffect(() => {
 		setTimeout(() => {
-			lastMessageRef.current?.scrollIntoView({ behavior: "smooth" });
+			bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 		}, 100);
 	}, [messages]);
 
 	return (
-		<div className='px-4 flex-1 overflow-auto'>
+		<div className='px-4 flex-1 overflow-auto chat-scroll'>
 			{!loading &&
 				messages.length > 0 &&
 				messages.map((message) => (
-					<div key={message._id} ref={lastMessageRef}>
+					<motion.div
+						key={message._id}
+						layout='position'
+						initial={{ opacity: 0, y: 14, scale: 0.97 }}
+						animate={{ opacity: 1, y: 0, scale: 1 }}
+						transition={{ type: "spring", stiffness: 500, damping: 38 }}
+					>
 						<Message message={message} />
-					</div>
+					</motion.div>
 				))}
+			<div ref={bottomRef} />
 
 			{loading && [...Array(3)].map((_, idx) => <MessageSkeleton key={idx} />)}
 			{!loading && messages.length === 0 && (
@@ -33,26 +41,3 @@ const Messages = () => {
 	);
 };
 export default Messages;
-
-// STARTER CODE SNIPPET
-// import Message from "./Message";
-
-// const Messages = () => {
-// 	return (
-// 		<div className='px-4 flex-1 overflow-auto'>
-// 			<Message />
-// 			<Message />
-// 			<Message />
-// 			<Message />
-// 			<Message />
-// 			<Message />
-// 			<Message />
-// 			<Message />
-// 			<Message />
-// 			<Message />
-// 			<Message />
-// 			<Message />
-// 		</div>
-// 	);
-// };
-// export default Messages;

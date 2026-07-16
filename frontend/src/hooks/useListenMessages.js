@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from "react";
+import toast from "react-hot-toast";
 
 import { useSocketContext } from "../context/SocketContext";
 import useConversation from "../zustand/useConversation";
@@ -29,12 +30,33 @@ const useListenMessages = () => {
     [setMessages, selectedConversation]
   );
 
+  const handleMessageDeleted = useCallback(
+    ({ messageId }) => {
+      setMessages((prevMessages) => prevMessages.filter((m) => m._id !== messageId));
+    },
+    [setMessages]
+  );
+
+  const handleConversationDeleted = useCallback(
+    ({ peerId }) => {
+      if (selectedConversation && selectedConversation._id === peerId) {
+        setMessages([]);
+      }
+      toast("A chat was deleted", { icon: "🗑️" });
+    },
+    [setMessages, selectedConversation]
+  );
+
   useEffect(() => {
     socket?.on("newMessage", handleNewMessage);
+    socket?.on("messageDeleted", handleMessageDeleted);
+    socket?.on("conversationDeleted", handleConversationDeleted);
 
     return () => {
       socket?.off("newMessage", handleNewMessage);
+      socket?.off("messageDeleted", handleMessageDeleted);
+      socket?.off("conversationDeleted", handleConversationDeleted);
     };
-  }, [socket, handleNewMessage]);
+  }, [socket, handleNewMessage, handleMessageDeleted, handleConversationDeleted]);
 };
 export default useListenMessages;
