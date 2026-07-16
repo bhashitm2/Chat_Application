@@ -7,18 +7,37 @@ import { TiMessages } from "react-icons/ti";
 import { IoCall, IoVideocam, IoEllipsisVertical, IoTrashOutline, IoPersonRemoveOutline } from "react-icons/io5";
 import toast from "react-hot-toast";
 import { useAuthContext } from "../../context/AuthContext";
+import { useSocketContext } from "../../context/SocketContext";
 import { useCallContext } from "../../context/CallContext";
 import useDeleteConversation from "../../hooks/useDeleteConversation";
 import ConfirmModal from "../ConfirmModal";
 import { resolveAvatar, onAvatarError } from "../../utils/avatar";
 
+const HeaderButton = ({ title, onClick, children }) => (
+	<motion.button
+		whileHover={{ scale: 1.05 }}
+		whileTap={{ scale: 0.9 }}
+		transition={{ type: "spring", stiffness: 500, damping: 22 }}
+		onClick={onClick}
+		className='w-10 h-10 rounded-full flex items-center justify-center text-icon-dim hover:bg-surface hover:text-accent transition-colors'
+		title={title}
+	>
+		{children}
+	</motion.button>
+);
+
 const MessageContainer = () => {
-	const { selectedConversation, setSelectedConversation, bumpSidebar } = useConversation();
+	const { selectedConversation, setSelectedConversation, bumpSidebar, typingUsers } = useConversation();
+	const { onlineUsers } = useSocketContext();
 	const { startCall } = useCallContext();
 	const { deleteConversation, deleting } = useDeleteConversation();
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [unfriendOpen, setUnfriendOpen] = useState(false);
 	const [unfriending, setUnfriending] = useState(false);
+	const [menuOpen, setMenuOpen] = useState(false);
+
+	const isOnline = selectedConversation && onlineUsers.includes(selectedConversation._id);
+	const isTyping = selectedConversation && !!typingUsers[selectedConversation._id];
 
 	const handleRemoveFriend = async () => {
 		setUnfriending(true);
@@ -43,88 +62,95 @@ const MessageContainer = () => {
 	}, [setSelectedConversation]);
 
 	return (
-		<div className='flex-1 flex flex-col md:min-w-[450px]'>
+		<div className='flex-1 min-w-0 flex flex-col bg-wall theme-fade'>
 			{!selectedConversation ? (
 				<NoChatSelected />
 			) : (
 				<motion.div
 					key={selectedConversation._id}
 					className='flex flex-col flex-1 min-h-0'
-					initial={{ opacity: 0, x: 24 }}
-					animate={{ opacity: 1, x: 0 }}
+					initial={{ opacity: 0, y: 8 }}
+					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.18, ease: "easeOut" }}
 				>
-						{/* Header */}
-						<div className='bg-slate-500 px-4 py-2 mb-2 flex items-center justify-between'>
-							<div className='flex items-center gap-2'>
-								<div className='avatar'>
-									<div className='w-8 rounded-full'>
-										<img src={resolveAvatar(selectedConversation.profilePic)} onError={onAvatarError} alt='user avatar' />
-									</div>
-								</div>
-								<span className='text-gray-900 font-bold'>{selectedConversation.fullName}</span>
+					{/* Header */}
+					<div className='flex items-center gap-3 px-[18px] py-[11px] bg-panel border-b border-line theme-fade z-10'>
+						<div className='relative flex-none'>
+							<img
+								src={resolveAvatar(selectedConversation.profilePic)}
+								onError={onAvatarError}
+								alt={selectedConversation.fullName}
+								className='w-11 h-11 rounded-full object-cover'
+							/>
+							{isOnline && (
+								<span
+									className='absolute right-0 bottom-0 w-3 h-3 rounded-full bg-online online-ping'
+									style={{ border: "2.5px solid var(--panel)" }}
+								></span>
+							)}
+						</div>
+						<div className='flex-1 min-w-0'>
+							<div className='font-bold text-base text-ink tracking-tight truncate'>
+								{selectedConversation.fullName}
 							</div>
-							<div className='flex items-center gap-4'>
-								<motion.button
-									whileTap={{ scale: 0.85 }}
-									onClick={() => startCall(selectedConversation, "audio")}
-									className='text-gray-900 hover:text-white transition-colors'
-									title='Voice call'
-								>
-									<IoCall size={20} />
-								</motion.button>
-								<motion.button
-									whileTap={{ scale: 0.85 }}
-									onClick={() => startCall(selectedConversation, "video")}
-									className='text-gray-900 hover:text-white transition-colors'
-									title='Video call'
-								>
-									<IoVideocam size={22} />
-								</motion.button>
-								<div className='dropdown dropdown-end'>
-									<motion.button
-										whileTap={{ scale: 0.85 }}
-										tabIndex={0}
-										className='text-gray-900 hover:text-white transition-colors'
-										title='More options'
-									>
-										<IoEllipsisVertical size={19} />
-									</motion.button>
-									<ul
-										tabIndex={0}
-										className='dropdown-content menu bg-gray-800 rounded-xl z-20 w-44 p-1.5 shadow-xl mt-2'
-									>
-										<li>
-											<button
-												className='text-red-400 hover:bg-gray-700 rounded-lg'
-												onClick={(e) => {
-													e.currentTarget.blur(); // close the dropdown
-													setConfirmOpen(true);
-												}}
-											>
-												<IoTrashOutline size={16} />
-												Delete Chat
-											</button>
-										</li>
-										<li>
-											<button
-												className='text-red-400 hover:bg-gray-700 rounded-lg'
-												onClick={(e) => {
-													e.currentTarget.blur(); // close the dropdown
-													setUnfriendOpen(true);
-												}}
-											>
-												<IoPersonRemoveOutline size={16} />
-												Remove Friend
-											</button>
-										</li>
-									</ul>
-								</div>
+							<div className={`text-[13px] font-semibold ${isTyping || isOnline ? "text-accent" : "text-ink-faint"}`}>
+								{isTyping ? "typing…" : isOnline ? "online" : "offline"}
 							</div>
 						</div>
-						<Messages />
-						<MessageInput />
-					</motion.div>
+						<div className='flex items-center gap-1'>
+							<HeaderButton title='Voice call' onClick={() => startCall(selectedConversation, "audio")}>
+								<IoCall size={19} />
+							</HeaderButton>
+							<HeaderButton title='Video call' onClick={() => startCall(selectedConversation, "video")}>
+								<IoVideocam size={21} />
+							</HeaderButton>
+							<div className='relative'>
+								<HeaderButton title='More options' onClick={() => setMenuOpen((o) => !o)}>
+									<IoEllipsisVertical size={19} />
+								</HeaderButton>
+								{menuOpen && (
+									<>
+										<div className='fixed inset-0 z-20' onClick={() => setMenuOpen(false)}></div>
+										<motion.ul
+											initial={{ opacity: 0, y: -6, scale: 0.95 }}
+											animate={{ opacity: 1, y: 0, scale: 1 }}
+											transition={{ type: "spring", stiffness: 500, damping: 30 }}
+											className='absolute right-0 top-12 z-30 w-48 rounded-card bg-panel border border-line shadow-frame p-1.5'
+										>
+											<li>
+												<button
+													className='w-full flex items-center gap-2.5 px-3 py-2 rounded-row text-sm font-semibold text-red-400 hover:bg-surface theme-fade'
+													onClick={() => {
+														setMenuOpen(false);
+														setConfirmOpen(true);
+													}}
+												>
+													<IoTrashOutline size={16} />
+													Delete Chat
+												</button>
+											</li>
+											<li>
+												<button
+													className='w-full flex items-center gap-2.5 px-3 py-2 rounded-row text-sm font-semibold text-red-400 hover:bg-surface theme-fade'
+													onClick={() => {
+														setMenuOpen(false);
+														setUnfriendOpen(true);
+													}}
+												>
+													<IoPersonRemoveOutline size={16} />
+													Remove Friend
+												</button>
+											</li>
+										</motion.ul>
+									</>
+								)}
+							</div>
+						</div>
+					</div>
+
+					<Messages />
+					<MessageInput />
+				</motion.div>
 			)}
 
 			<ConfirmModal
@@ -162,10 +188,12 @@ const NoChatSelected = () => {
 			initial={{ opacity: 0 }}
 			animate={{ opacity: 1 }}
 		>
-			<div className='px-4 text-center sm:text-lg md:text-xl text-gray-200 font-semibold flex flex-col items-center gap-2'>
-				<p>Welcome 👋 {authUser.fullName} ❄</p>
-				<p>Select a chat to start messaging</p>
-				<TiMessages className='text-3xl md:text-6xl text-center' />
+			<div className='px-4 text-center flex flex-col items-center gap-3'>
+				<div className='w-16 h-16 rounded-[22px] bg-grad glow-send flex items-center justify-center rotate-6 mb-1'>
+					<TiMessages className='text-3xl text-white' />
+				</div>
+				<p className='text-lg font-extrabold text-ink tracking-tight'>Welcome, {authUser.fullName} 👋</p>
+				<p className='text-sm text-ink-dim'>Select a chat to start messaging</p>
 			</div>
 		</motion.div>
 	);

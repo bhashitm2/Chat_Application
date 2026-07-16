@@ -14,6 +14,9 @@ const useGetMessages = () => {
         const data = await res.json();
         if (data.error) throw new Error(data.error);
         setMessages(data);
+        // opening the chat marked its messages read server-side — refresh
+        // the sidebar so this conversation's unread badge clears
+        useConversation.getState().bumpSidebar();
       } catch (error) {
         toast.error(error.message);
       } finally {

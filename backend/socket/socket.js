@@ -43,6 +43,22 @@ io.on("connection", (socket) => {
   // io.emit() is used to send events to all the connected clients
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
+  // ---- Typing indicators (ephemeral relay, no persistence) ----
+
+  socket.on("typing:start", ({ to }) => {
+    const targetSocketId = userSocketMap[to];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("typing:start", { from: userId });
+    }
+  });
+
+  socket.on("typing:stop", ({ to }) => {
+    const targetSocketId = userSocketMap[to];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("typing:stop", { from: userId });
+    }
+  });
+
   // ---- Call signaling (WebRTC) ----
 
   socket.on("call:initiate", async ({ to, callType, caller }) => {
@@ -123,7 +139,10 @@ io.on("connection", (socket) => {
   // socket.on() is used to listen to the events. can be used both on client and server side
   socket.on("disconnect", () => {
     console.log("user disconnected", socket.id);
-    if (userId && userId !== "undefined") {
+    // only clean up if the map still points at THIS socket — a stale socket's
+    // late disconnect (reconnects, StrictMode double-mount) must not evict the
+    // user's live connection from the map
+    if (userId && userId !== "undefined" && userSocketMap[userId] === socket.id) {
       endCallForUser(userId);
       delete userSocketMap[userId];
       console.log(`User ${userId} removed from socket map`);

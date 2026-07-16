@@ -1,42 +1,156 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   "Modern Soft" design tokens (from design handoff)
+   Light is the default; .dark on <html> flips every token.
+   ============================================================ */
+:root {
+	--accent: #6366f1;
+	--accent-2: #8b5cf6;
+	--grad: linear-gradient(135deg, #6366f1, #8b5cf6);
+
+	--app-bg: #e8eaf5;
+	--panel: #ffffff;
+	--line: #edeef8;
+	--panel-border: #e4e6f3;
+	--surface: #f1f2fb;
+
+	--ink: #0f1620;
+	--ink-dim: #5b6675;
+	--ink-faint: #9aa4b2;
+	--icon-dim: #7b8794;
+
+	--in-bubble: #ffffff;
+	--in-text: #0f1620;
+	--out-text: #ffffff;
+	--time-in: #9aa6b4;
+	--time-out: rgba(255, 255, 255, 0.82);
+
+	--wall: radial-gradient(rgba(99, 102, 241, 0.06) 1.5px, transparent 1.5px) 0 0/26px 26px, #f5f6fc;
+	--sep-bg: rgba(255, 255, 255, 0.82);
+	--sep-text: #6b6f8f;
+
+	--bubble-shadow: 0 1px 1.5px rgba(16, 26, 42, 0.13);
+	--out-shadow: 0 4px 14px -6px rgba(99, 102, 241, 0.5);
+	--row-active-shadow: 0 8px 20px -8px rgba(99, 102, 241, 0.6);
+	--frame-shadow: 0 24px 60px -24px rgba(70, 60, 150, 0.5);
+	--send-glow: rgba(99, 102, 241, 0.6);
+
+	--unread-muted: #b3bccb;
+	--online: #37c26a;
+	--overlay: rgba(20, 26, 44, 0.42);
+
+	--emoji-panel: #ffffff;
+	--emoji-border: #e9edf1;
+
+	--voice-btn-out: rgba(255, 255, 255, 0.24);
+	--wave-played-out: #ffffff;
+	--wave-track-out: rgba(255, 255, 255, 0.45);
+
+	--scroll-thumb: rgba(15, 22, 32, 0.18);
+}
+
+.dark {
+	--accent: #7c83ff;
+	--accent-2: #a06bff;
+	--grad: linear-gradient(135deg, #5a5ee6, #7c4fe0);
+
+	--app-bg: #0b0d13;
+	--panel: #14161e;
+	--line: #20222d;
+	--panel-border: #1e2029;
+	--surface: #1c1f29;
+
+	--ink: #e9ecf3;
+	--ink-dim: #8791a1;
+	--ink-faint: #66717f;
+	--icon-dim: #8791a1;
+
+	--in-bubble: #20232f;
+	--in-text: #e7edf4;
+	--out-text: #eaf2fd;
+	--time-in: #6c7a8a;
+	--time-out: rgba(255, 255, 255, 0.72);
+
+	--wall: radial-gradient(rgba(255, 255, 255, 0.03) 1.5px, transparent 1.5px) 0 0/26px 26px, #0f1117;
+	--sep-bg: rgba(255, 255, 255, 0.09);
+	--sep-text: #b3bdc9;
+
+	--bubble-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+	--out-shadow: 0 6px 18px -6px rgba(90, 94, 230, 0.55);
+	--row-active-shadow: 0 8px 20px -8px rgba(90, 94, 230, 0.7);
+	--frame-shadow: 0 24px 60px -22px rgba(0, 0, 0, 0.75);
+	--send-glow: rgba(90, 94, 230, 0.6);
+
+	--unread-muted: #3d4a57;
+	--online: #37c26a;
+	--overlay: rgba(0, 0, 0, 0.58);
+
+	--emoji-panel: #171922;
+	--emoji-border: #262a36;
+
+	--voice-btn-out: rgba(255, 255, 255, 0.22);
+	--wave-played-out: #ffffff;
+	--wave-track-out: rgba(255, 255, 255, 0.4);
+
+	--scroll-thumb: rgba(255, 255, 255, 0.22);
+}
+
 body {
-	background: #0f172a;
-	/* Fallback */
-	background-color: #0d1117;
-	color: #e5e7eb;
-	font-family: 'Poppins', sans-serif;
+	background-color: var(--app-bg);
+	color: var(--ink);
+	font-family: "Figtree", system-ui, sans-serif;
 	height: 100vh;
 	width: 100vw;
 	overflow: hidden;
+	/* background-color (not the shorthand): Chromium wedges shorthand
+	   background transitions when the value comes from a flipped CSS var */
+	transition: background-color 0.35s ease, color 0.35s ease;
 }
 
-/* Glassmorphism Utilities */
-.glass {
-	background: rgba(255, 255, 255, 0.05);
-	backdrop-filter: blur(8px);
-	-webkit-backdrop-filter: blur(8px);
-	border: 1px solid rgba(255, 255, 255, 0.1);
-	box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+/* token-driven helper surfaces that Tailwind utilities can't express */
+.bg-grad {
+	background: var(--grad);
 }
 
-.glass-input {
-	background: rgba(0, 0, 0, 0.5) !important;
-	border: 1px solid rgba(255, 255, 255, 0.2) !important;
-	color: white !important;
+.bg-wall {
+	background: var(--wall);
 }
 
-.glass-input:focus {
-	border-color: rgba(59, 130, 246, 0.5) !important;
-	outline: none !important;
-	box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+.shadow-bubble {
+	box-shadow: var(--bubble-shadow);
 }
 
-/* Custom Scrollbar */
+.shadow-bubble-out {
+	box-shadow: var(--out-shadow);
+}
+
+.shadow-row-active {
+	box-shadow: var(--row-active-shadow);
+}
+
+.shadow-frame {
+	box-shadow: var(--frame-shadow);
+}
+
+.glow-send {
+	box-shadow: 0 6px 16px -4px var(--send-glow);
+}
+
+.theme-fade {
+	transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease;
+}
+
+/* springy hover used across small round buttons */
+.spring {
+	transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.18s ease, color 0.18s ease;
+}
+
+/* ============================================================
+   Scrollbars
+   ============================================================ */
 ::-webkit-scrollbar {
 	width: 6px;
 }
@@ -46,36 +160,75 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-	background: rgba(255, 255, 255, 0.2);
+	background: var(--scroll-thumb);
 	border-radius: 10px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-	background: rgba(255, 255, 255, 0.3);
-}
-
-/* thin telegram-style scrollbar inside chat panes */
 .chat-scroll {
 	scroll-behavior: smooth;
 	scrollbar-width: thin;
-	scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+	scrollbar-color: var(--scroll-thumb) transparent;
 }
 
 .chat-scroll::-webkit-scrollbar {
 	width: 5px;
 }
 
-.chat-scroll::-webkit-scrollbar-track {
-	background: transparent;
-}
-
 .chat-scroll::-webkit-scrollbar-thumb {
-	background: rgba(255, 255, 255, 0.25);
+	background: var(--scroll-thumb);
 	border-radius: 999px;
 }
 
-.chat-scroll::-webkit-scrollbar-thumb:hover {
-	background: rgba(255, 255, 255, 0.4);
+/* ============================================================
+   Keyframes (from design handoff)
+   ============================================================ */
+@keyframes tgTyping {
+	0%,
+	60%,
+	100% {
+		transform: translateY(0);
+		opacity: 0.4;
+	}
+	30% {
+		transform: translateY(-4px);
+		opacity: 1;
+	}
+}
+
+.typing-dot {
+	animation: tgTyping 1.3s infinite;
+}
+
+@keyframes tgOnline {
+	0%,
+	100% {
+		box-shadow: 0 0 0 0 rgba(55, 194, 106, 0.55);
+	}
+	70% {
+		box-shadow: 0 0 0 5px rgba(55, 194, 106, 0);
+	}
+}
+
+.online-ping {
+	animation: tgOnline 2.4s infinite;
+}
+
+@keyframes tgPop {
+	0% {
+		transform: scale(0.5);
+		opacity: 0;
+	}
+	65% {
+		transform: scale(1.12);
+	}
+	100% {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+
+.pop-in {
+	animation: tgPop 0.4s both;
 }
 
 /* pulsing red dot while recording a voice note */
@@ -104,7 +257,6 @@ body {
 }
 
 @keyframes shake {
-
 	10%,
 	90% {
 		transform: translate3d(-1px, 0, 0);

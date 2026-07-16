@@ -114,6 +114,19 @@ export const getMessages = async (req, res) => {
 		const { id: userToChatId } = req.params;
 		const senderId = req.user._id;
 
+		// opening the conversation marks their messages as read; tell the
+		// sender so their double-checks light up live
+		const updated = await Message.updateMany(
+			{ senderId: userToChatId, receiverId: senderId, read: false },
+			{ $set: { read: true } }
+		);
+		if (updated.modifiedCount > 0) {
+			const otherSocketId = getReceiverSocketId(userToChatId);
+			if (otherSocketId) {
+				io.to(otherSocketId).emit("messagesRead", { readerId: senderId.toString() });
+			}
+		}
+
 		const conversation = await Conversation.findOne({
 			participants: { $all: [senderId, userToChatId] },
 		}).populate("messages"); // NOT REFERENCE BUT ACTUAL MESSAGES
@@ -125,6 +138,31 @@ export const getMessages = async (req, res) => {
 		res.status(200).json(messages);
 	} catch (error) {
 		console.log("Error in getMessages controller: ", error.message);
+		res.status(500).json({ error: "Internal server error" });
+	}
+};
+
+// marks everything from :id to me as read (called when a message arrives
+// while the conversation is already open on screen)
+export const markMessagesRead = async (req, res) => {
+	try {
+		const { id: otherUserId } = req.params;
+		const myId = req.user._id;
+
+		const updated = await Message.updateMany(
+			{ senderId: otherUserId, receiverId: myId, read: false },
+			{ $set: { read: true } }
+		);
+		if (updated.modifiedCount > 0) {
+			const otherSocketId = getReceiverSocketId(otherUserId);
+			if (otherSocketId) {
+				io.to(otherSocketId).emit("messagesRead", { readerId: myId.toString() });
+			}
+		}
+
+		res.status(200).json({ read: updated.modifiedCount });
+	} catch (error) {
+		console.log("Error in markMessagesRead controller: ", error.message);
 		res.status(500).json({ error: "Internal server error" });
 	}
 };

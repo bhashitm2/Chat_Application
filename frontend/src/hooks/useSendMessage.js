@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 
 const useSendMessage = () => {
 	const [loading, setLoading] = useState(false);
-	const { setMessages, selectedConversation } = useConversation();
+	const { setMessages, selectedConversation, bumpSidebar } = useConversation();
 
 	const sendMessage = async ({ message = "", files = [], waveform = null, duration = 0 }) => {
 		setLoading(true);
@@ -33,6 +33,7 @@ const useSendMessage = () => {
 			if (data.error) throw new Error(data.error);
 
 			setMessages((prev) => [...prev, data]);
+			bumpSidebar(); // refresh own conversation preview
 		} catch (error) {
 			toast.error(error.message);
 		} finally {

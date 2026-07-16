@@ -10,13 +10,15 @@ const formatTime = (seconds) => {
 	return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 };
 
-const VoiceNotePlayer = ({ src, waveform = [], duration = 0 }) => {
+// variant "out" = white on the gradient bubble; "in" = accent on the incoming bubble
+const VoiceNotePlayer = ({ src, waveform = [], duration = 0, variant = "out" }) => {
 	const audioRef = useRef(null);
 	const [playing, setPlaying] = useState(false);
 	const [progress, setProgress] = useState(0); // 0..1
 	const [totalTime, setTotalTime] = useState(duration);
 
 	const bars = waveform.length > 0 ? waveform : FALLBACK_BARS;
+	const isOut = variant === "out";
 
 	useEffect(() => {
 		const audio = audioRef.current;
@@ -82,24 +84,32 @@ const VoiceNotePlayer = ({ src, waveform = [], duration = 0 }) => {
 				type='button'
 				whileTap={{ scale: 0.88 }}
 				onClick={togglePlay}
-				className='w-9 h-9 shrink-0 rounded-full bg-white/25 hover:bg-white/35 flex items-center justify-center text-white'
+				className={`w-[38px] h-[38px] shrink-0 rounded-full flex items-center justify-center text-white ${
+					isOut ? "bg-white/25 hover:bg-white/35" : "bg-grad glow-send"
+				}`}
 				title={playing ? "Pause" : "Play"}
 			>
 				{playing ? <IoPause size={17} /> : <IoPlay size={17} className='ml-0.5' />}
 			</motion.button>
-			<div className='flex flex-col gap-1 flex-1'>
-				<div className='flex items-end gap-[2px] h-6 cursor-pointer' onClick={seek}>
+			<div className='flex flex-col gap-[5px] flex-1'>
+				<div className='flex items-end gap-[2px] h-[26px] cursor-pointer' onClick={seek}>
 					{bars.map((level, i) => (
 						<div
 							key={i}
-							className={`w-[3px] rounded-full transition-colors duration-150 ${
-								i < playedBars ? "bg-white" : "bg-white/40"
+							className={`w-[3px] rounded-[3px] transition-colors duration-150 ${
+								i < playedBars
+									? isOut
+										? "bg-white"
+										: "bg-accent"
+									: isOut
+									? "bg-white/40"
+									: "bg-ink-faint/50"
 							}`}
 							style={{ height: `${Math.max(15, level)}%` }}
 						/>
 					))}
 				</div>
-				<span className='text-[11px] text-white/70 leading-none'>
+				<span className={`text-[11px] leading-none ${isOut ? "text-white/70" : "text-ink-faint"}`}>
 					{playing || progress > 0 ? formatTime(remaining) : formatTime(totalTime)}
 				</span>
 			</div>

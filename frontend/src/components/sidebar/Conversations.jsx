@@ -1,46 +1,42 @@
 import { motion } from "framer-motion";
 import useGetConversations from "../../hooks/useGetConversations";
-import { getRandomEmoji } from "../../utils/emojis";
 import Conversation from "./Conversation";
 
-const Conversations = () => {
+const Conversations = ({ filter = "All" }) => {
 	const { loading, conversations } = useGetConversations();
+
+	// Groups aren't supported yet — the tab shows an honest empty state
+	const filtered =
+		filter === "Unread"
+			? conversations.filter((c) => (c.unreadCount || 0) > 0)
+			: filter === "Groups"
+			? []
+			: conversations; // All & Personal (every chat is 1:1 today)
+
 	return (
-		<div className='py-2 flex flex-col overflow-auto chat-scroll'>
-			{conversations.map((conversation, idx) => (
+		<div className='flex-1 overflow-y-auto chat-scroll px-2 pb-2 pt-1 flex flex-col gap-[2px]'>
+			{filtered.map((conversation, idx) => (
 				<motion.div
 					key={conversation._id}
 					initial={{ opacity: 0, x: -16 }}
 					animate={{ opacity: 1, x: 0 }}
-					transition={{ delay: idx * 0.04, duration: 0.2, ease: "easeOut" }}
+					transition={{ delay: Math.min(idx * 0.04, 0.3), duration: 0.2, ease: "easeOut" }}
 				>
-					<Conversation
-						conversation={conversation}
-						emoji={getRandomEmoji()}
-						lastIdx={idx === conversations.length - 1}
-					/>
+					<Conversation conversation={conversation} />
 				</motion.div>
 			))}
 
-			{loading ? <span className='loading loading-spinner mx-auto'></span> : null}
+			{!loading && filtered.length === 0 && (
+				<p className='text-center text-[13px] text-ink-faint mt-8 px-4'>
+					{filter === "Groups"
+						? "Group chats are coming soon"
+						: filter === "Unread"
+						? "No unread chats — all caught up ✨"
+						: "Find people with the search above to start chatting"}
+				</p>
+			)}
+			{loading && <span className='loading loading-spinner mx-auto mt-6 text-accent'></span>}
 		</div>
 	);
 };
 export default Conversations;
-
-// STARTER CODE SNIPPET
-// import Conversation from "./Conversation";
-
-// const Conversations = () => {
-// 	return (
-// 		<div className='py-2 flex flex-col overflow-auto'>
-// 			<Conversation />
-// 			<Conversation />
-// 			<Conversation />
-// 			<Conversation />
-// 			<Conversation />
-// 			<Conversation />
-// 		</div>
-// 	);
-// };
-// export default Conversations;

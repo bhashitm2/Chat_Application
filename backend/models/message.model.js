@@ -39,6 +39,11 @@ const messageSchema = new mongoose.Schema(
 			type: Number,
 			default: 0,
 		},
+		// read receipt: set true when the receiver opens the conversation
+		read: {
+			type: Boolean,
+			default: false,
+		},
 		// createdAt, updatedAt
 	},
 	{ timestamps: true }

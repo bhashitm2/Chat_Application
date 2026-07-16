@@ -49,7 +49,7 @@ const SearchInput = () => {
 					<motion.button
 						whileTap={{ scale: 0.85 }}
 						onClick={() => handleMessage(user)}
-						className='w-8 h-8 rounded-full bg-sky-500 hover:bg-sky-600 text-white flex items-center justify-center'
+						className='w-8 h-8 rounded-full bg-grad text-white flex items-center justify-center glow-send'
 						title='Message'
 					>
 						<IoChatbubbleEllipses size={15} />
@@ -57,7 +57,10 @@ const SearchInput = () => {
 				);
 			case "outgoing":
 				return (
-					<span className='w-8 h-8 rounded-full bg-gray-600 text-gray-300 flex items-center justify-center' title='Request pending'>
+					<span
+						className='w-8 h-8 rounded-full bg-surface text-ink-faint flex items-center justify-center'
+						title='Request pending'
+					>
 						<IoTime size={15} />
 					</span>
 				);
@@ -66,7 +69,7 @@ const SearchInput = () => {
 					<motion.button
 						whileTap={{ scale: 0.85 }}
 						onClick={() => handleAccept(user)}
-						className='w-8 h-8 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center'
+						className='w-8 h-8 rounded-full bg-online text-white flex items-center justify-center'
 						title='Accept their request'
 					>
 						<IoCheckmark size={16} />
@@ -77,7 +80,7 @@ const SearchInput = () => {
 					<motion.button
 						whileTap={{ scale: 0.85 }}
 						onClick={() => handleAdd(user)}
-						className='w-8 h-8 rounded-full bg-sky-500 hover:bg-sky-600 text-white flex items-center justify-center'
+						className='w-8 h-8 rounded-full bg-grad text-white flex items-center justify-center'
 						title='Send friend request'
 					>
 						<IoPersonAdd size={14} />
@@ -87,19 +90,24 @@ const SearchInput = () => {
 	};
 
 	return (
-		<div className='relative flex-1'>
-			<form onSubmit={(e) => e.preventDefault()} className='flex items-center gap-2'>
-				<div className='relative flex-1'>
+		<div className='relative'>
+			<form onSubmit={(e) => e.preventDefault()}>
+				<div className='flex items-center gap-2 h-10 px-[13px] rounded-pill bg-surface theme-fade'>
+					<span className='text-ink-faint flex-none'>
+						{searching ? (
+							<span className='loading loading-spinner loading-xs'></span>
+						) : (
+							<IoSearchSharp size={17} />
+						)}
+					</span>
 					<input
+						id='user-search-input'
 						type='text'
-						placeholder='Find people…'
-						className='input input-bordered rounded-full w-full pe-10'
+						placeholder='Search'
+						className='flex-1 min-w-0 bg-transparent text-sm text-ink placeholder:text-ink-faint focus:outline-none'
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
 					/>
-					<span className='absolute inset-y-0 end-3 flex items-center text-gray-400'>
-						{searching ? <span className='loading loading-spinner loading-xs'></span> : <IoSearchSharp className='w-5 h-5' />}
-					</span>
 				</div>
 			</form>
 
@@ -107,22 +115,28 @@ const SearchInput = () => {
 				<motion.div
 					initial={{ opacity: 0, y: -8, scale: 0.97 }}
 					animate={{ opacity: 1, y: 0, scale: 1 }}
-					className='absolute left-0 right-0 top-14 z-30 max-h-80 overflow-y-auto chat-scroll rounded-xl bg-gray-800 border border-gray-700 shadow-xl p-2'
+					transition={{ type: "spring", stiffness: 500, damping: 34 }}
+					className='absolute left-0 right-0 top-12 z-30 max-h-80 overflow-y-auto chat-scroll rounded-card bg-panel border border-line shadow-frame p-2'
 				>
 					{!searching && results.length === 0 && (
-						<p className='text-gray-500 text-sm px-2 py-3 text-center'>No users found</p>
+						<p className='text-ink-faint text-sm px-2 py-3 text-center'>No users found</p>
 					)}
 					{results.map((user) => (
 						<motion.div
 							key={user._id}
 							initial={{ opacity: 0, x: -10 }}
 							animate={{ opacity: 1, x: 0 }}
-							className='flex items-center gap-2 p-2 rounded-lg hover:bg-gray-700'
+							className='flex items-center gap-2.5 p-2 rounded-row hover:bg-surface theme-fade'
 						>
-							<img src={resolveAvatar(user.profilePic)} onError={onAvatarError} alt={user.fullName} className='w-9 h-9 rounded-full object-cover' />
+							<img
+								src={resolveAvatar(user.profilePic)}
+								onError={onAvatarError}
+								alt={user.fullName}
+								className='w-9 h-9 rounded-full object-cover'
+							/>
 							<div className='flex-1 min-w-0'>
-								<p className='text-gray-200 text-sm font-semibold truncate'>{user.fullName}</p>
-								<p className='text-gray-500 text-xs truncate'>@{user.username}</p>
+								<p className='text-ink text-sm font-bold truncate'>{user.fullName}</p>
+								<p className='text-ink-faint text-xs truncate'>@{user.username}</p>
 							</div>
 							{actionFor(user)}
 						</motion.div>

@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import User from "../models/user.model.js";
 import FriendRequest from "../models/friendRequest.model.js";
+import Message from "../models/message.model.js";
 
 const PUBLIC_FIELDS = "fullName username profilePic";
 
@@ -11,12 +12,51 @@ const removeUploadedFile = (fileUrl) => {
 	fs.unlink(filePath, () => {}); // best-effort; ignore missing files
 };
 
-// sidebar shows only the logged-in user's friends
+// sidebar shows only the logged-in user's friends, enriched with the last
+// message preview + unread count and sorted by most recent activity
 export const getUsersForSidebar = async (req, res) => {
 	try {
-		const me = await User.findById(req.user._id).populate("friends", PUBLIC_FIELDS);
+		const myId = req.user._id;
+		const me = await User.findById(myId).populate("friends", PUBLIC_FIELDS);
+		const friends = me?.friends || [];
 
-		res.status(200).json(me?.friends || []);
+		const enriched = await Promise.all(
+			friends.map(async (friend) => {
+				const [last, unreadCount] = await Promise.all([
+					Message.findOne({
+						$or: [
+							{ senderId: myId, receiverId: friend._id },
+							{ senderId: friend._id, receiverId: myId },
+						],
+					})
+						.sort({ createdAt: -1 })
+						.select("message messageType senderId createdAt duration"),
+					Message.countDocuments({ senderId: friend._id, receiverId: myId, read: false }),
+				]);
+
+				return {
+					...friend.toObject(),
+					lastMessage: last
+						? {
+								message: last.message,
+								messageType: last.messageType,
+								senderId: last.senderId,
+								createdAt: last.createdAt,
+								duration: last.duration,
+						  }
+						: null,
+					unreadCount,
+				};
+			})
+		);
+
+		enriched.sort((a, b) => {
+			const ta = a.lastMessage ? new Date(a.lastMessage.createdAt).getTime() : 0;
+			const tb = b.lastMessage ? new Date(b.lastMessage.createdAt).getTime() : 0;
+			return tb - ta;
+		});
+
+		res.status(200).json(enriched);
 	} catch (error) {
 		console.error("Error in getUsersForSidebar: ", error.message);
 		res.status(500).json({ error: "Internal server error" });
