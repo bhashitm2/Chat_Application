@@ -10,6 +10,7 @@ import { useAuthContext } from "../../context/AuthContext";
 import { useCallContext } from "../../context/CallContext";
 import useDeleteConversation from "../../hooks/useDeleteConversation";
 import ConfirmModal from "../ConfirmModal";
+import { resolveAvatar, onAvatarError } from "../../utils/avatar";
 
 const MessageContainer = () => {
 	const { selectedConversation, setSelectedConversation, bumpSidebar } = useConversation();
@@ -42,7 +43,7 @@ const MessageContainer = () => {
 	}, [setSelectedConversation]);
 
 	return (
-		<div className='md:min-w-[450px] flex flex-col'>
+		<div className='flex-1 flex flex-col md:min-w-[450px]'>
 			{!selectedConversation ? (
 				<NoChatSelected />
 			) : (
@@ -55,8 +56,12 @@ const MessageContainer = () => {
 				>
 						{/* Header */}
 						<div className='bg-slate-500 px-4 py-2 mb-2 flex items-center justify-between'>
-							<div>
-								<span className='label-text'>To:</span>{" "}
+							<div className='flex items-center gap-2'>
+								<div className='avatar'>
+									<div className='w-8 rounded-full'>
+										<img src={resolveAvatar(selectedConversation.profilePic)} onError={onAvatarError} alt='user avatar' />
+									</div>
+								</div>
 								<span className='text-gray-900 font-bold'>{selectedConversation.fullName}</span>
 							</div>
 							<div className='flex items-center gap-4'>

@@ -12,9 +12,11 @@ const useListenMessages = () => {
 
   const handleNewMessage = useCallback(
     (newMessage) => {
+      console.log("Received new message:", newMessage);
       // Only add message if it belongs to the currently selected conversation
+      if (!selectedConversation) return;
+
       if (
-        selectedConversation &&
         (newMessage.senderId === selectedConversation._id ||
           newMessage.receiverId === selectedConversation._id)
       ) {

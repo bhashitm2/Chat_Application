@@ -7,6 +7,8 @@ import useDeleteMessage from "../../hooks/useDeleteMessage";
 import ConfirmModal from "../ConfirmModal";
 import VoiceNotePlayer from "./VoiceNotePlayer";
 import { resolveAvatar, onAvatarError } from "../../utils/avatar";
+import useTheme from "../../zustand/useTheme";
+import { THEMES } from "../../utils/themes";
 
 const AlbumGrid = ({ urls }) => {
 	if (urls.length === 2) {
@@ -40,13 +42,17 @@ const Message = ({ message }) => {
 	const { selectedConversation } = useConversation();
 	const { deleteMessage, deleting } = useDeleteMessage();
 	const [confirmOpen, setConfirmOpen] = useState(false);
+	const { theme } = useTheme();
 
 	const fromMe = message.senderId === authUser._id;
 	const formattedTime = extractTime(message.createdAt);
 	const chatClassName = fromMe ? "chat-end" : "chat-start";
 	const profilePic = fromMe ? authUser.profilePic : selectedConversation?.profilePic;
-	const bubbleBgColor = fromMe ? "bg-blue-500" : "";
-
+	
+	const currentTheme = THEMES[theme] || THEMES.default;
+	const bubbleBgColor = fromMe ? currentTheme.bubbleSent : currentTheme.bubbleRecv;
+	
+	const tailClass = fromMe ? "rounded-tr-none" : "rounded-tl-none";
 	const shakeClass = message.shouldShake ? "shake" : "";
 	const messageType = message.messageType || "text";
 	const isAlbum = messageType === "image" && (message.fileUrls?.length || 0) > 1;
@@ -69,7 +75,7 @@ const Message = ({ message }) => {
 						<BsTrash size={14} />
 					</button>
 				)}
-				<div className={`chat-bubble text-white ${bubbleBgColor} ${shakeClass} pb-2`}>
+				<div className={`chat-bubble text-white ${bubbleBgColor} ${tailClass} ${shakeClass} pb-2`}>
 					{isAlbum && <AlbumGrid urls={message.fileUrls} />}
 					{!isAlbum && messageType === "image" && (
 						<a href={message.fileUrl} target='_blank' rel='noreferrer'>

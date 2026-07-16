@@ -3,6 +3,7 @@ import Conversations from "./Conversations";
 import LogoutButton from "./LogoutButton";
 import SearchInput from "./SearchInput";
 import FriendRequests from "./FriendRequests";
+import ThemeSelector from "./ThemeSelector";
 import ProfileModal from "../ProfileModal";
 import { useAuthContext } from "../../context/AuthContext";
 import { resolveAvatar, onAvatarError } from "../../utils/avatar";
@@ -36,7 +37,10 @@ const Sidebar = () => {
 						{authUser.fullName}
 					</span>
 				</button>
-				<LogoutButton />
+				<div className='flex items-center gap-1 shrink-0'>
+					<ThemeSelector />
+					<LogoutButton />
+				</div>
 			</div>
 
 			<ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />

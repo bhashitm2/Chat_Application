@@ -1,9 +1,16 @@
 import { useSocketContext } from "../../context/SocketContext";
 import useConversation from "../../zustand/useConversation";
 import { resolveAvatar, onAvatarError } from "../../utils/avatar";
+import useTheme from "../../zustand/useTheme";
+import { THEMES } from "../../utils/themes";
 
 const Conversation = ({ conversation, lastIdx, emoji }) => {
 	const { selectedConversation, setSelectedConversation } = useConversation();
+	const { theme } = useTheme();
+	const currentTheme = THEMES[theme] || THEMES.default;
+	// Extract the main color class (e.g. from bubbleSent "bg-blue-600") to use as active bg
+	// Or use a hardcoded mapping if needed. For now, let's use the bubbleSent color but with different opacity
+	// Actually, bubbleSent is a class string like "bg-blue-600". That works for background.
 
 	const isSelected = selectedConversation?._id === conversation._id;
 	const { onlineUsers } = useSocketContext();
@@ -12,9 +19,9 @@ const Conversation = ({ conversation, lastIdx, emoji }) => {
 	return (
 		<>
 			<div
-				className={`flex gap-2 items-center hover:bg-sky-500 rounded-lg p-2 py-1 cursor-pointer
+				className={`flex gap-2 items-center hover:bg-slate-700/50 rounded-lg p-2 py-1 cursor-pointer
 				transition-all duration-200 active:scale-[0.98]
-				${isSelected ? "bg-sky-500" : ""}
+				${isSelected ? currentTheme.bubbleSent : ""}
 			`}
 				onClick={() => setSelectedConversation(conversation)}
 			>

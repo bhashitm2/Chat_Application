@@ -1,30 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
-	background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url("/bg.png");
-	background-repeat: no-repeat;
-	background-size: cover;
-	background-position: center;
+	background: #0f172a;
+	/* Fallback */
+	background-color: #0d1117;
+	color: #e5e7eb;
+	font-family: 'Poppins', sans-serif;
+	height: 100vh;
+	width: 100vw;
+	overflow: hidden;
 }
 
-/* dark mode looking scrollbar */
+/* Glassmorphism Utilities */
+.glass {
+	background: rgba(255, 255, 255, 0.05);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.glass-input {
+	background: rgba(0, 0, 0, 0.5) !important;
+	border: 1px solid rgba(255, 255, 255, 0.2) !important;
+	color: white !important;
+}
+
+.glass-input:focus {
+	border-color: rgba(59, 130, 246, 0.5) !important;
+	outline: none !important;
+	box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-	width: 8px;
+	width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-	background: #555;
+	background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-	background: #121212;
-	border-radius: 5px;
+	background: rgba(255, 255, 255, 0.2);
+	border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	background: #242424;
+	background: rgba(255, 255, 255, 0.3);
 }
 
 /* thin telegram-style scrollbar inside chat panes */
@@ -77,6 +104,7 @@ body {
 }
 
 @keyframes shake {
+
 	10%,
 	90% {
 		transform: translate3d(-1px, 0, 0);
