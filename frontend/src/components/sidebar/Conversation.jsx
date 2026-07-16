@@ -1,5 +1,6 @@
 import { useSocketContext } from "../../context/SocketContext";
 import useConversation from "../../zustand/useConversation";
+import { resolveAvatar, onAvatarError } from "../../utils/avatar";
 import useTheme from "../../zustand/useTheme";
 import { THEMES } from "../../utils/themes";
 
@@ -18,14 +19,15 @@ const Conversation = ({ conversation, lastIdx, emoji }) => {
 	return (
 		<>
 			<div
-				className={`flex gap-2 items-center hover:bg-slate-700/50 rounded p-2 py-1 cursor-pointer transition-colors
+				className={`flex gap-2 items-center hover:bg-slate-700/50 rounded-lg p-2 py-1 cursor-pointer
+				transition-all duration-200 active:scale-[0.98]
 				${isSelected ? currentTheme.bubbleSent : ""}
 			`}
 				onClick={() => setSelectedConversation(conversation)}
 			>
 				<div className={`avatar ${isOnline ? "online" : ""}`}>
 					<div className='w-12 rounded-full'>
-						<img src={conversation.profilePic} alt='user avatar' />
+						<img src={resolveAvatar(conversation.profilePic)} onError={onAvatarError} alt='user avatar' />
 					</div>
 				</div>
 

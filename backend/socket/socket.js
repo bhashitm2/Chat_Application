@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import http from "http";
 import express from "express";
+import User from "../models/user.model.js";
 
 const app = express();
 
@@ -17,6 +18,18 @@ export const getReceiverSocketId = (receiverId) => {
 };
 
 const userSocketMap = {}; // {userId: socketId}
+const callPartners = {}; // {userId: userId of the peer they're in a call with}
+
+const endCallForUser = (userId) => {
+  const partnerId = callPartners[userId];
+  if (!partnerId) return;
+  delete callPartners[userId];
+  delete callPartners[partnerId];
+  const partnerSocketId = userSocketMap[partnerId];
+  if (partnerSocketId) {
+    io.to(partnerSocketId).emit("call:ended", { from: userId });
+  }
+};
 
 io.on("connection", (socket) => {
   console.log("a user connected", socket.id);
@@ -30,10 +43,88 @@ io.on("connection", (socket) => {
   // io.emit() is used to send events to all the connected clients
   io.emit("getOnlineUsers", Object.keys(userSocketMap));
 
+  // ---- Call signaling (WebRTC) ----
+
+  socket.on("call:initiate", async ({ to, callType, caller }) => {
+    try {
+      const me = await User.findById(userId).select("friends");
+      const isFriend = me?.friends?.some((f) => f.toString() === to);
+      if (!isFriend) {
+        socket.emit("call:forbidden", { to });
+        return;
+      }
+    } catch {
+      socket.emit("call:forbidden", { to });
+      return;
+    }
+    const calleeSocketId = userSocketMap[to];
+    if (!calleeSocketId) {
+      socket.emit("call:unavailable", { to });
+      return;
+    }
+    if (callPartners[to]) {
+      socket.emit("call:busy", { to });
+      return;
+    }
+    io.to(calleeSocketId).emit("call:incoming", { callType, caller });
+  });
+
+  socket.on("call:accept", ({ to }) => {
+    const callerSocketId = userSocketMap[to];
+    if (!callerSocketId) {
+      socket.emit("call:ended", { from: to });
+      return;
+    }
+    callPartners[userId] = to;
+    callPartners[to] = userId;
+    io.to(callerSocketId).emit("call:accepted", { from: userId });
+  });
+
+  socket.on("call:reject", ({ to }) => {
+    const callerSocketId = userSocketMap[to];
+    if (callerSocketId) {
+      io.to(callerSocketId).emit("call:rejected", { from: userId });
+    }
+  });
+
+  socket.on("call:end", ({ to }) => {
+    if (callPartners[userId]) {
+      endCallForUser(userId);
+    } else if (to) {
+      // the call never connected (still ringing) — notify the peer directly
+      const peerSocketId = userSocketMap[to];
+      if (peerSocketId) {
+        io.to(peerSocketId).emit("call:ended", { from: userId });
+      }
+    }
+  });
+
+  socket.on("webrtc:offer", ({ to, offer }) => {
+    const targetSocketId = userSocketMap[to];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("webrtc:offer", { from: userId, offer });
+    }
+  });
+
+  socket.on("webrtc:answer", ({ to, answer }) => {
+    const targetSocketId = userSocketMap[to];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("webrtc:answer", { from: userId, answer });
+    }
+  });
+
+  socket.on("webrtc:ice-candidate", ({ to, candidate }) => {
+    const targetSocketId = userSocketMap[to];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit("webrtc:ice-candidate", { from: userId, candidate });
+    }
+  });
+
   // socket.on() is used to listen to the events. can be used both on client and server side
   socket.on("disconnect", () => {
     console.log("user disconnected", socket.id);
     if (userId && userId !== "undefined") {
+      endCallForUser(userId);
       delete userSocketMap[userId];
       console.log(`User ${userId} removed from socket map`);
     }

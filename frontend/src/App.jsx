@@ -5,6 +5,7 @@ import Login from "./pages/login/Login";
 import SignUp from "./pages/signup/SignUp";
 import { Toaster } from "react-hot-toast";
 import { useAuthContext } from "./context/AuthContext";
+import CallOverlay from "./components/calls/CallOverlay";
 import useTheme from "./zustand/useTheme";
 import { THEMES } from "./utils/themes";
 import Preloader from "./components/common/Preloader";
@@ -33,6 +34,7 @@ function App() {
 				<Route path='/login' element={authUser ? <Navigate to='/' /> : <Login />} />
 				<Route path='/signup' element={authUser ? <Navigate to='/' /> : <SignUp />} />
 			</Routes>
+			<CallOverlay />
 			<Toaster />
 		</div>
 	);

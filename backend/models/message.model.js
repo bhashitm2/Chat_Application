@@ -14,7 +14,30 @@ const messageSchema = new mongoose.Schema(
 		},
 		message: {
 			type: String,
-			required: true,
+			default: "",
+		},
+		messageType: {
+			type: String,
+			enum: ["text", "image", "video", "audio"],
+			default: "text",
+		},
+		fileUrl: {
+			type: String,
+			default: "",
+		},
+		// album messages (2-3 photos sent together) store all urls here
+		fileUrls: {
+			type: [String],
+			default: [],
+		},
+		// voice notes: normalized volume samples (0-100) and length in seconds
+		waveform: {
+			type: [Number],
+			default: [],
+		},
+		duration: {
+			type: Number,
+			default: 0,
 		},
 		// createdAt, updatedAt
 	},
