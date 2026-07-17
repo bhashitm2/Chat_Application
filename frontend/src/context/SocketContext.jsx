@@ -16,7 +16,10 @@ export const SocketContextProvider = ({ children }) => {
 
   useEffect(() => {
     if (authUser) {
-      const socket = io("http://localhost:5000", {
+      // in production the backend serves the frontend from the same origin;
+      // only dev needs an explicit URL (Vite on :3000, API on :5000)
+      const socketURL = import.meta.env.MODE === "development" ? "http://localhost:5000" : "/";
+      const socket = io(socketURL, {
         query: {
           userId: authUser._id,
         },
