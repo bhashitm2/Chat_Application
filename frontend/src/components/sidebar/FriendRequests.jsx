@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { IoPersonAdd, IoCheckmark, IoClose } from "react-icons/io5";
 import useFriendRequests from "../../hooks/useFriendRequests";
@@ -7,9 +7,27 @@ import { resolveAvatar, onAvatarError } from "../../utils/avatar";
 const FriendRequests = () => {
 	const [open, setOpen] = useState(false);
 	const { requests, acceptRequest, rejectRequest } = useFriendRequests();
+	const rootRef = useRef(null);
+
+	// close on outside click / Escape (same pattern as EmojiPicker)
+	useEffect(() => {
+		if (!open) return;
+		const onDown = (e) => {
+			if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+		};
+		const onKey = (e) => {
+			if (e.key === "Escape") setOpen(false);
+		};
+		document.addEventListener("mousedown", onDown);
+		document.addEventListener("keydown", onKey);
+		return () => {
+			document.removeEventListener("mousedown", onDown);
+			document.removeEventListener("keydown", onKey);
+		};
+	}, [open]);
 
 	return (
-		<div className='relative'>
+		<div className='relative' ref={rootRef}>
 			<motion.button
 				type='button'
 				whileHover={{ scale: 1.1 }}
