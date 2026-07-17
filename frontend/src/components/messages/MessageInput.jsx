@@ -1,12 +1,16 @@
-import { useRef, useState } from "react";
-import { BsTrash, BsX, BsEmojiSmile, BsPaperclip, BsMic } from "react-icons/bs";
+import { useEffect, useRef, useState } from "react";
+import { BsTrash, BsX, BsEmojiSmile, BsPaperclip, BsMic, BsReply } from "react-icons/bs";
 import { IoSend } from "react-icons/io5";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import useSendMessage from "../../hooks/useSendMessage";
 import useVoiceRecorder from "../../hooks/useVoiceRecorder";
 import { useTypingEmitter } from "../../hooks/useTyping";
+import { useAuthContext } from "../../context/AuthContext";
+import useConversation from "../../zustand/useConversation";
+import { messageSnippet } from "../../utils/messageSnippet";
 import EmojiPicker from "./EmojiPicker";
+import EmojiText from "../EmojiText";
 
 const MAX_PHOTOS = 3;
 
@@ -26,8 +30,15 @@ const MessageInput = () => {
 	const { loading, sendMessage } = useSendMessage();
 	const { isRecording, duration, levels, startRecording, stopRecording, cancelRecording } = useVoiceRecorder();
 	const { notifyTyping, stopTyping } = useTypingEmitter();
+	const { authUser } = useAuthContext();
+	const { selectedConversation, replyingTo, setReplyingTo } = useConversation();
 
 	const hasContent = message.trim().length > 0 || selectedFiles.length > 0;
+
+	// jump the caret into the input when a reply is started
+	useEffect(() => {
+		if (replyingTo) textInputRef.current?.focus();
+	}, [replyingTo]);
 
 	const clearFiles = () => {
 		selectedFiles.forEach(({ previewUrl }) => URL.revokeObjectURL(previewUrl));
@@ -98,6 +109,13 @@ const MessageInput = () => {
 		}
 	};
 
+	// a picked GIF sends immediately, like Telegram
+	const handleGifPick = (gifUrl) => {
+		setEmojiOpen(false);
+		stopTyping();
+		sendMessage({ gifUrl });
+	};
+
 	// insert at the caret so emoji land where the user is typing
 	const insertEmoji = (emoji) => {
 		const input = textInputRef.current;
@@ -118,7 +136,34 @@ const MessageInput = () => {
 			className='relative px-[18px] py-3 bg-panel border-t border-line theme-fade z-10'
 			onSubmit={handleSubmit}
 		>
-			{emojiOpen && !isRecording && <EmojiPicker onPick={insertEmoji} onClose={() => setEmojiOpen(false)} />}
+			{emojiOpen && !isRecording && (
+				<EmojiPicker onPick={insertEmoji} onPickGif={handleGifPick} onClose={() => setEmojiOpen(false)} />
+			)}
+
+			{/* reply preview bar (mount animation only) */}
+			{replyingTo && !isRecording && (
+				<motion.div
+					initial={{ opacity: 0, y: 6 }}
+					animate={{ opacity: 1, y: 0 }}
+					className='mb-2.5 flex items-center gap-2.5 px-3 py-2 rounded-card bg-surface theme-fade'
+				>
+					<BsReply size={18} className='text-accent flex-none' />
+					<div className='flex-1 min-w-0 border-s-2 border-accent ps-2.5'>
+						<p className='text-[12px] font-bold text-accent'>
+							Replying to {replyingTo.senderId === authUser._id ? "yourself" : selectedConversation?.fullName}
+						</p>
+						<EmojiText className='block text-[12.5px] text-ink-dim truncate'>{messageSnippet(replyingTo)}</EmojiText>
+					</div>
+					<button
+						type='button'
+						onClick={() => setReplyingTo(null)}
+						className='flex-none text-ink-faint hover:text-red-400 transition-colors'
+						title='Cancel reply'
+					>
+						<BsX size={20} />
+					</button>
+				</motion.div>
+			)}
 
 			{/* attachment previews (mount animation only — exit animations are unreliable with StrictMode) */}
 			{selectedFiles.length > 0 && !isRecording && (

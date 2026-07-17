@@ -2,7 +2,10 @@ import { create } from "zustand";
 
 const useConversation = create((set) => ({
 	selectedConversation: null,
-	setSelectedConversation: (selectedConversation) => set({ selectedConversation }),
+	setSelectedConversation: (selectedConversation) => set({ selectedConversation, replyingTo: null }),
+	// the message currently being replied to (shown above the composer)
+	replyingTo: null,
+	setReplyingTo: (replyingTo) => set({ replyingTo }),
 	messages: [],
 	setMessages: (messages) =>
 		set((state) => ({

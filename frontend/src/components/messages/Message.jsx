@@ -1,13 +1,18 @@
-import { useState } from "react";
-import { BsTrash } from "react-icons/bs";
+import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { BsTrash, BsReply, BsEmojiSmile } from "react-icons/bs";
 import { useAuthContext } from "../../context/AuthContext";
 import { extractTime } from "../../utils/extractTime";
 import useConversation from "../../zustand/useConversation";
 import useDeleteMessage from "../../hooks/useDeleteMessage";
+import useReactToMessage from "../../hooks/useReactToMessage";
 import ConfirmModal from "../ConfirmModal";
 import VoiceNotePlayer from "./VoiceNotePlayer";
 import { resolveAvatar, onAvatarError } from "../../utils/avatar";
+import { messageSnippet } from "../../utils/messageSnippet";
 import EmojiText from "../EmojiText";
+
+const QUICK_REACTIONS = ["❤️", "👍", "👎", "😂", "😮", "😢", "🔥"];
 
 // read receipts (design: two 1.8px stroke polylines, 16×11)
 const Checks = ({ read }) => (
@@ -73,33 +78,176 @@ const TimeStamp = ({ fromMe, message, formattedTime, onMedia = false }) => (
 	</span>
 );
 
+// quoted message shown at the top of a reply bubble; click scrolls to the original
+const QuotedMessage = ({ replyTo, fromMe, peerName, myId }) => {
+	if (!replyTo) return null;
+	const name = replyTo.senderId === myId ? "You" : peerName;
+
+	const jumpToOriginal = () => {
+		const el = document.getElementById(`msg-${replyTo._id}`);
+		if (!el) return;
+		el.scrollIntoView({ behavior: "smooth", block: "center" });
+		el.classList.remove("msg-flash");
+		void el.offsetWidth; // restart the animation if it already ran
+		el.classList.add("msg-flash");
+	};
+
+	return (
+		<button
+			type='button'
+			onClick={jumpToOriginal}
+			className={`block w-full min-w-[140px] text-left mb-1 px-2.5 py-1.5 rounded-[9px] border-s-[3px] ${
+				fromMe ? "bg-white/15 border-white/70" : "bg-surface border-accent theme-fade"
+			}`}
+		>
+			<span className={`block text-[12px] font-bold ${fromMe ? "text-white" : "text-accent"}`}>{name}</span>
+			<EmojiText className={`block text-[12.5px] truncate ${fromMe ? "text-white/85" : "text-ink-dim"}`}>
+				{messageSnippet(replyTo)}
+			</EmojiText>
+		</button>
+	);
+};
+
+// Telegram-style quick reaction row, anchored above the bubble
+const QuickReactions = ({ fromMe, onPick, onClose }) => {
+	const ref = useRef(null);
+
+	useEffect(() => {
+		const onDown = (e) => {
+			if (ref.current && !ref.current.contains(e.target)) onClose();
+		};
+		const onKey = (e) => {
+			if (e.key === "Escape") onClose();
+		};
+		document.addEventListener("mousedown", onDown);
+		document.addEventListener("keydown", onKey);
+		return () => {
+			document.removeEventListener("mousedown", onDown);
+			document.removeEventListener("keydown", onKey);
+		};
+	}, [onClose]);
+
+	return (
+		<motion.div
+			ref={ref}
+			initial={{ opacity: 0, scale: 0.8, y: 6 }}
+			animate={{ opacity: 1, scale: 1, y: 0 }}
+			transition={{ type: "spring", stiffness: 500, damping: 28 }}
+			style={{ transformOrigin: fromMe ? "bottom right" : "bottom left" }}
+			className={`absolute bottom-full mb-1.5 ${fromMe ? "right-0" : "left-0"} z-20 flex items-center gap-0.5 px-1.5 py-1 rounded-full bg-panel border border-line shadow-frame`}
+		>
+			{QUICK_REACTIONS.map((emoji) => (
+				<motion.button
+					key={emoji}
+					type='button'
+					whileHover={{ scale: 1.3, y: -2 }}
+					whileTap={{ scale: 0.9 }}
+					transition={{ type: "spring", stiffness: 500, damping: 18 }}
+					onClick={() => onPick(emoji)}
+					className='w-7 h-7 rounded-full flex items-center justify-center text-lg hover:bg-surface'
+					title='React'
+				>
+					<EmojiText>{emoji}</EmojiText>
+				</motion.button>
+			))}
+		</motion.div>
+	);
+};
+
+// grouped reaction pills under the bubble; clicking toggles your own reaction
+const ReactionChips = ({ reactions, myId, fromMe, onToggle }) => {
+	if (!reactions?.length) return null;
+
+	const groups = [];
+	for (const r of reactions) {
+		let group = groups.find((g) => g.emoji === r.emoji);
+		if (!group) {
+			group = { emoji: r.emoji, count: 0, mine: false };
+			groups.push(group);
+		}
+		group.count += 1;
+		if (r.userId === myId) group.mine = true;
+	}
+
+	return (
+		<div className={`flex flex-wrap gap-1 mt-1 ${fromMe ? "justify-end" : ""}`}>
+			{groups.map((group) => (
+				<motion.button
+					key={group.emoji}
+					type='button'
+					initial={{ scale: 0.6 }}
+					animate={{ scale: 1 }}
+					whileTap={{ scale: 0.85 }}
+					transition={{ type: "spring", stiffness: 500, damping: 22 }}
+					onClick={() => onToggle(group.emoji)}
+					className={`flex items-center gap-1 h-[22px] px-2 rounded-full text-[12px] font-bold border theme-fade ${
+						group.mine ? "bg-grad text-white border-transparent shadow-row-active" : "bg-panel text-ink-dim border-line"
+					}`}
+					title={group.mine ? "Remove reaction" : "React the same"}
+				>
+					<EmojiText className='leading-none text-[13px]'>{group.emoji}</EmojiText>
+					{group.count > 1 && <span>{group.count}</span>}
+				</motion.button>
+			))}
+		</div>
+	);
+};
+
+const HoverAction = ({ title, danger = false, onClick, children }) => (
+	<button
+		type='button'
+		onClick={onClick}
+		className={`text-ink-faint transition-colors ${danger ? "hover:text-red-400" : "hover:text-accent"}`}
+		title={title}
+	>
+		{children}
+	</button>
+);
+
 const Message = ({ message, lastOfGroup = true }) => {
 	const { authUser } = useAuthContext();
-	const { selectedConversation } = useConversation();
+	const { selectedConversation, setReplyingTo } = useConversation();
 	const { deleteMessage, deleting } = useDeleteMessage();
+	const { reactToMessage } = useReactToMessage();
 	const [confirmOpen, setConfirmOpen] = useState(false);
+	const [reactOpen, setReactOpen] = useState(false);
 
 	const fromMe = message.senderId === authUser._id;
 	const formattedTime = extractTime(message.createdAt);
 	const shakeClass = message.shouldShake ? "shake" : "";
 	const messageType = message.messageType || "text";
 	const isAlbum = messageType === "image" && (message.fileUrls?.length || 0) > 1;
-	const isMedia = messageType === "image" || messageType === "video";
-	const jumbo = messageType === "text" && isJumboEmoji(message.message);
+	const isMedia = messageType === "image" || messageType === "video" || messageType === "gif";
+	const jumbo = messageType === "text" && !message.replyTo && isJumboEmoji(message.message);
 
-	const deleteButton = fromMe && (
-		<button
-			type='button'
-			onClick={() => setConfirmOpen(true)}
-			className='self-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 text-ink-faint hover:text-red-400 me-2'
-			title='Delete message'
+	const pickReaction = (emoji) => {
+		reactToMessage(message._id, emoji);
+		setReactOpen(false);
+	};
+
+	const hoverActions = (
+		<div
+			className={`self-center flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 ${
+				fromMe ? "me-2.5" : "ms-2.5"
+			}`}
 		>
-			<BsTrash size={14} />
-		</button>
+			{fromMe && (
+				<HoverAction title='Delete message' danger onClick={() => setConfirmOpen(true)}>
+					<BsTrash size={14} />
+				</HoverAction>
+			)}
+			<HoverAction title='React' onClick={() => setReactOpen((o) => !o)}>
+				<BsEmojiSmile size={14} />
+			</HoverAction>
+			<HoverAction title='Reply' onClick={() => setReplyingTo(message)}>
+				<BsReply size={17} />
+			</HoverAction>
+		</div>
 	);
 
 	const bubbleContent = (
 		<>
+			<QuotedMessage replyTo={message.replyTo} fromMe={fromMe} peerName={selectedConversation?.fullName} myId={authUser._id} />
 			{isAlbum && <AlbumGrid urls={message.fileUrls} />}
 			{!isAlbum && messageType === "image" && (
 				<a href={message.fileUrl} target='_blank' rel='noreferrer'>
@@ -108,6 +256,9 @@ const Message = ({ message, lastOfGroup = true }) => {
 			)}
 			{messageType === "video" && (
 				<video src={message.fileUrl} controls className='max-w-[260px] max-h-64 rounded-[10px]' />
+			)}
+			{messageType === "gif" && (
+				<img src={message.fileUrl} alt='GIF' className='max-w-[240px] max-h-64 rounded-[10px] object-cover' />
 			)}
 			{messageType === "audio" && (
 				<VoiceNotePlayer
@@ -131,24 +282,32 @@ const Message = ({ message, lastOfGroup = true }) => {
 		</>
 	);
 
+	const reactionChips = (
+		<ReactionChips reactions={message.reactions} myId={authUser._id} fromMe={fromMe} onToggle={pickReaction} />
+	);
+
 	// ---- outgoing ----
 	if (fromMe) {
 		return (
 			<div className='flex justify-end group'>
-				{deleteButton}
-				{jumbo ? (
-					<EmojiText as='div' className={`text-[44px] leading-none ${shakeClass}`}>
-						{message.message.trim()}
-					</EmojiText>
-				) : (
-					<div
-						className={`max-w-[76%] rounded-bubble bg-grad text-out-text shadow-bubble-out ${shakeClass} ${
-							isMedia ? "p-1" : "px-3 py-2"
-						}`}
-					>
-						{bubbleContent}
-					</div>
-				)}
+				{hoverActions}
+				<div className='relative flex flex-col items-end max-w-[76%]'>
+					{reactOpen && <QuickReactions fromMe onPick={pickReaction} onClose={() => setReactOpen(false)} />}
+					{jumbo ? (
+						<EmojiText as='div' className={`text-[44px] leading-none ${shakeClass}`}>
+							{message.message.trim()}
+						</EmojiText>
+					) : (
+						<div
+							className={`rounded-bubble bg-grad text-out-text shadow-bubble-out ${shakeClass} ${
+								isMedia ? "p-1" : "px-3 py-2"
+							}`}
+						>
+							{bubbleContent}
+						</div>
+					)}
+					{reactionChips}
+				</div>
 
 				<ConfirmModal
 					open={confirmOpen}
@@ -178,19 +337,24 @@ const Message = ({ message, lastOfGroup = true }) => {
 			) : (
 				<div className='w-8 flex-none'></div>
 			)}
-			{jumbo ? (
-				<EmojiText as='div' className={`text-[44px] leading-none ${shakeClass}`}>
-					{message.message.trim()}
-				</EmojiText>
-			) : (
-				<div
-					className={`max-w-[78%] rounded-bubble bg-in-bubble text-in-text shadow-bubble theme-fade ${shakeClass} ${
-						isMedia ? "p-1" : "px-3 py-2"
-					}`}
-				>
-					{bubbleContent}
-				</div>
-			)}
+			<div className='relative flex flex-col items-start max-w-[78%]'>
+				{reactOpen && <QuickReactions fromMe={false} onPick={pickReaction} onClose={() => setReactOpen(false)} />}
+				{jumbo ? (
+					<EmojiText as='div' className={`text-[44px] leading-none ${shakeClass}`}>
+						{message.message.trim()}
+					</EmojiText>
+				) : (
+					<div
+						className={`rounded-bubble bg-in-bubble text-in-text shadow-bubble theme-fade ${shakeClass} ${
+							isMedia ? "p-1" : "px-3 py-2"
+						}`}
+					>
+						{bubbleContent}
+					</div>
+				)}
+				{reactionChips}
+			</div>
+			{hoverActions}
 		</div>
 	);
 };

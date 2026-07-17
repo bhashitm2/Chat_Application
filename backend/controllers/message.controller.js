@@ -64,8 +64,32 @@ export const sendMessage = async (req, res) => {
 			duration = Math.max(0, Math.round(Number(req.body.duration) || 0));
 		}
 
+		// GIFs are sent as a Tenor media URL, not an upload
+		const gifUrl = (req.body.gifUrl || "").toString();
+		if (gifUrl && files.length === 0) {
+			if (!gifUrl.startsWith("https://media.tenor.com/")) {
+				return res.status(400).json({ error: "Invalid GIF" });
+			}
+			messageType = "gif";
+			fileUrl = gifUrl;
+		}
+
 		if (!message && !fileUrl) {
 			return res.status(400).json({ error: "Message cannot be empty" });
+		}
+
+		// quoted message must belong to this same conversation
+		let replyTo = null;
+		if (req.body.replyTo) {
+			try {
+				const target = await Message.findById(req.body.replyTo).select("senderId receiverId");
+				const pair = [senderId.toString(), receiverId.toString()];
+				if (target && pair.includes(target.senderId.toString()) && pair.includes(target.receiverId.toString())) {
+					replyTo = target._id;
+				}
+			} catch {
+				replyTo = null;
+			}
 		}
 
 		let conversation = await Conversation.findOne({
@@ -87,6 +111,7 @@ export const sendMessage = async (req, res) => {
 			fileUrls,
 			waveform,
 			duration,
+			replyTo,
 		});
 
 		if (newMessage) {
@@ -95,6 +120,10 @@ export const sendMessage = async (req, res) => {
 
 		// this will run in parallel
 		await Promise.all([conversation.save(), newMessage.save()]);
+
+		if (newMessage.replyTo) {
+			await newMessage.populate("replyTo", "message messageType senderId fileUrl duration");
+		}
 
 		const receiverSocketId = getReceiverSocketId(receiverId);
 		if (receiverSocketId) {
@@ -129,7 +158,10 @@ export const getMessages = async (req, res) => {
 
 		const conversation = await Conversation.findOne({
 			participants: { $all: [senderId, userToChatId] },
-		}).populate("messages"); // NOT REFERENCE BUT ACTUAL MESSAGES
+		}).populate({
+			path: "messages", // NOT REFERENCE BUT ACTUAL MESSAGES
+			populate: { path: "replyTo", select: "message messageType senderId fileUrl duration" },
+		});
 
 		if (!conversation) return res.status(200).json([]);
 
@@ -163,6 +195,44 @@ export const markMessagesRead = async (req, res) => {
 		res.status(200).json({ read: updated.modifiedCount });
 	} catch (error) {
 		console.log("Error in markMessagesRead controller: ", error.message);
+		res.status(500).json({ error: "Internal server error" });
+	}
+};
+
+// one reaction per user: same emoji toggles it off, a different one replaces it
+export const reactToMessage = async (req, res) => {
+	try {
+		const { messageId } = req.params;
+		const emoji = (req.body.emoji || "").toString();
+		const userId = req.user._id;
+
+		if (!emoji || emoji.length > 16) {
+			return res.status(400).json({ error: "Invalid reaction" });
+		}
+
+		const message = await Message.findById(messageId);
+		if (!message) return res.status(404).json({ error: "Message not found" });
+
+		const me = userId.toString();
+		const participants = [message.senderId.toString(), message.receiverId.toString()];
+		if (!participants.includes(me)) {
+			return res.status(403).json({ error: "You can only react in your own chats" });
+		}
+
+		const mine = message.reactions.find((r) => r.userId.toString() === me);
+		const others = message.reactions.filter((r) => r.userId.toString() !== me);
+		message.reactions = mine && mine.emoji === emoji ? others : [...others, { userId, emoji }];
+		await message.save();
+
+		const otherId = participants.find((p) => p !== me);
+		const otherSocketId = getReceiverSocketId(otherId);
+		if (otherSocketId) {
+			io.to(otherSocketId).emit("messageReaction", { messageId, reactions: message.reactions });
+		}
+
+		res.status(200).json({ messageId, reactions: message.reactions });
+	} catch (error) {
+		console.log("Error in reactToMessage controller: ", error.message);
 		res.status(500).json({ error: "Internal server error" });
 	}
 };

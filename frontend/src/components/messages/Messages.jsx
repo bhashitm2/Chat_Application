@@ -51,7 +51,7 @@ const Messages = () => {
 						!next || next.senderId !== message.senderId || dayKey(next.createdAt) !== dayKey(message.createdAt);
 
 					return (
-						<div key={message._id}>
+						<div key={message._id} id={`msg-${message._id}`}>
 							{newDay && (
 								<div className='self-center text-center my-3'>
 									<span

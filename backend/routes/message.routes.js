@@ -5,6 +5,7 @@ import {
 	deleteMessage,
 	deleteConversation,
 	markMessagesRead,
+	reactToMessage,
 } from "../controllers/message.controller.js";
 import protectRoute from "../middleware/protectRoute.js";
 import upload from "../utils/upload.js";
@@ -26,6 +27,7 @@ const uploadFiles = (req, res, next) => {
 router.get("/:id", protectRoute, getMessages);
 router.post("/send/:id", protectRoute, uploadFiles, sendMessage);
 router.post("/read/:id", protectRoute, markMessagesRead);
+router.post("/react/:messageId", protectRoute, reactToMessage);
 // "/conversation/:id" must be registered before "/:messageId"
 router.delete("/conversation/:id", protectRoute, deleteConversation);
 router.delete("/:messageId", protectRoute, deleteMessage);

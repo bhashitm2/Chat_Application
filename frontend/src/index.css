@@ -288,3 +288,18 @@ img.emoji {
 		transform: translate3d(4px, 0, 0);
 	}
 }
+
+/* brief highlight when jumping to a quoted message */
+@keyframes msgFlash {
+	0%,
+	55% {
+		background-color: color-mix(in srgb, var(--accent) 14%, transparent);
+	}
+	100% {
+		background-color: transparent;
+	}
+}
+.msg-flash {
+	animation: msgFlash 1.4s ease-out;
+	border-radius: 14px;
+}

@@ -46,6 +46,13 @@ const useListenMessages = () => {
     [setMessages, selectedConversation]
   );
 
+  const handleMessageReaction = useCallback(
+    ({ messageId, reactions }) => {
+      setMessages((prev) => prev.map((m) => (m._id === messageId ? { ...m, reactions } : m)));
+    },
+    [setMessages]
+  );
+
   const handleMessageDeleted = useCallback(
     ({ messageId }) => {
       setMessages((prevMessages) => prevMessages.filter((m) => m._id !== messageId));
@@ -66,15 +73,17 @@ const useListenMessages = () => {
   useEffect(() => {
     socket?.on("newMessage", handleNewMessage);
     socket?.on("messagesRead", handleMessagesRead);
+    socket?.on("messageReaction", handleMessageReaction);
     socket?.on("messageDeleted", handleMessageDeleted);
     socket?.on("conversationDeleted", handleConversationDeleted);
 
     return () => {
       socket?.off("newMessage", handleNewMessage);
       socket?.off("messagesRead", handleMessagesRead);
+      socket?.off("messageReaction", handleMessageReaction);
       socket?.off("messageDeleted", handleMessageDeleted);
       socket?.off("conversationDeleted", handleConversationDeleted);
     };
-  }, [socket, handleNewMessage, handleMessagesRead, handleMessageDeleted, handleConversationDeleted]);
+  }, [socket, handleNewMessage, handleMessagesRead, handleMessageReaction, handleMessageDeleted, handleConversationDeleted]);
 };
 export default useListenMessages;

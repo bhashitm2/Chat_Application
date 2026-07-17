@@ -18,8 +18,27 @@ const messageSchema = new mongoose.Schema(
 		},
 		messageType: {
 			type: String,
-			enum: ["text", "image", "video", "audio"],
+			enum: ["text", "image", "video", "audio", "gif"],
 			default: "text",
+		},
+		// one reaction per user; re-reacting replaces it, same emoji toggles it off
+		reactions: {
+			type: [
+				new mongoose.Schema(
+					{
+						userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+						emoji: { type: String, required: true },
+					},
+					{ _id: false }
+				),
+			],
+			default: [],
+		},
+		// the message this one quotes (populated with a snippet on fetch)
+		replyTo: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: "Message",
+			default: null,
 		},
 		fileUrl: {
 			type: String,

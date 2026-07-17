@@ -32,6 +32,8 @@ const Preview = ({ conversation, fromMe, isSelected }) => {
 			? `📷 Photo${last.message ? ` · ${last.message}` : ""}`
 			: last.messageType === "video"
 			? `🎬 Video${last.message ? ` · ${last.message}` : ""}`
+			: last.messageType === "gif"
+			? "GIF"
 			: last.message;
 
 	return (
