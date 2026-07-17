@@ -1,32 +1,38 @@
-// Proxy for the Tenor v2 API so the key stays server-side.
-// Get a free key at https://developers.google.com/tenor and put it in .env
-// as TENOR_API_KEY — until then the endpoint reports itself unconfigured.
-const TENOR_BASE = "https://tenor.googleapis.com/v2";
+// Proxy for the KLIPY GIF API (Tenor's successor — the Tenor API shuts down
+// June 30, 2026) so the key stays server-side. Get a free key at
+// https://klipy.com/developers and put it in .env as KLIPY_API_KEY — until
+// then the endpoint reports itself unconfigured.
+const KLIPY_BASE = "https://api.klipy.com/api/v1";
 
 export const searchGifs = async (req, res) => {
 	try {
-		const key = process.env.TENOR_API_KEY;
+		const key = process.env.KLIPY_API_KEY;
 		if (!key) {
-			return res.status(503).json({ error: "GIFs are not set up yet (missing TENOR_API_KEY)" });
+			return res.status(503).json({ error: "GIFs are not set up yet (missing KLIPY_API_KEY)" });
 		}
 
 		const q = (req.query.q || "").toString().slice(0, 100).trim();
-		const params = `key=${key}&limit=24&media_filter=tinygif,gif&contentfilter=medium`;
+		// customer_id is KLIPY's per-end-user identifier for dedupe/analytics
+		const params = `per_page=24&page=1&customer_id=${req.user._id.toString()}`;
 		const url = q
-			? `${TENOR_BASE}/search?${params}&q=${encodeURIComponent(q)}`
-			: `${TENOR_BASE}/featured?${params}`;
+			? `${KLIPY_BASE}/${key}/gifs/search?${params}&q=${encodeURIComponent(q)}`
+			: `${KLIPY_BASE}/${key}/gifs/trending?${params}`;
 
 		const response = await fetch(url);
 		if (!response.ok) {
 			return res.status(502).json({ error: "GIF search failed" });
 		}
-		const data = await response.json();
+		const payload = await response.json();
 
-		const gifs = (data.results || [])
-			.map((g) => ({
-				id: g.id,
-				preview: g.media_formats?.tinygif?.url,
-				url: g.media_formats?.gif?.url || g.media_formats?.tinygif?.url,
+		// items: { type: "gif", slug, file: { hd|md|sm|xs: { gif|webp|mp4: { url } } } }
+		// (type "ad" entries are interleaved on some plans — skip them)
+		const items = payload?.data?.data || [];
+		const gifs = items
+			.filter((item) => item?.type === "gif" && item?.file)
+			.map((item) => ({
+				id: item.slug,
+				preview: item.file.xs?.gif?.url || item.file.sm?.gif?.url || item.file.md?.gif?.url,
+				url: item.file.md?.gif?.url || item.file.hd?.gif?.url || item.file.sm?.gif?.url,
 			}))
 			.filter((g) => g.preview && g.url);
 

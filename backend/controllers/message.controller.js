@@ -12,6 +12,20 @@ const messageTypeFromMime = (mimetype) => {
 	return "text";
 };
 
+// only GIFs hosted on KLIPY's CDN may be stored (extend if they add domains)
+const GIF_HOSTS = ["klipy.com"];
+const isAllowedGifUrl = (value) => {
+	try {
+		const parsed = new URL(value);
+		return (
+			parsed.protocol === "https:" &&
+			GIF_HOSTS.some((host) => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`))
+		);
+	} catch {
+		return false;
+	}
+};
+
 const removeUploadedFile = (fileUrl) => {
 	if (!fileUrl || !fileUrl.startsWith("/uploads/")) return;
 	const filePath = path.join(path.resolve(), "uploads", path.basename(fileUrl));
@@ -64,10 +78,10 @@ export const sendMessage = async (req, res) => {
 			duration = Math.max(0, Math.round(Number(req.body.duration) || 0));
 		}
 
-		// GIFs are sent as a Tenor media URL, not an upload
+		// GIFs are sent as a KLIPY CDN URL, not an upload
 		const gifUrl = (req.body.gifUrl || "").toString();
 		if (gifUrl && files.length === 0) {
-			if (!gifUrl.startsWith("https://media.tenor.com/")) {
+			if (!isAllowedGifUrl(gifUrl)) {
 				return res.status(400).json({ error: "Invalid GIF" });
 			}
 			messageType = "gif";

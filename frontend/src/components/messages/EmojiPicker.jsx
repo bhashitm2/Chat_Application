@@ -104,7 +104,7 @@ const EmojiPicker = ({ onPick, onPickGif, onClose }) => {
 						type='text'
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
-						placeholder={mode === "gifs" ? "Search Tenor GIFs" : "Search emoji"}
+						placeholder={mode === "gifs" ? "Search GIFs" : "Search emoji"}
 						className='flex-1 min-w-0 bg-transparent text-[13px] text-ink placeholder:text-ink-faint focus:outline-none'
 					/>
 				</div>
@@ -207,7 +207,7 @@ const EmojiPicker = ({ onPick, onPickGif, onClose }) => {
 						<span className='ms-auto text-[10.5px] font-semibold text-ink-faint whitespace-nowrap'>Stickers soon</span>
 					</>
 				) : (
-					<span className='mx-auto text-[10.5px] font-semibold text-ink-faint'>Powered by Tenor</span>
+					<span className='mx-auto text-[10.5px] font-semibold text-ink-faint'>Powered by KLIPY</span>
 				)}
 			</div>
 		</motion.div>
