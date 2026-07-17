@@ -12,6 +12,7 @@ import { useCallContext } from "../../context/CallContext";
 import useDeleteConversation from "../../hooks/useDeleteConversation";
 import ConfirmModal from "../ConfirmModal";
 import { resolveAvatar, onAvatarError } from "../../utils/avatar";
+import EmojiText from "../EmojiText";
 
 const HeaderButton = ({ title, onClick, children }) => (
 	<motion.button
@@ -192,7 +193,9 @@ const NoChatSelected = () => {
 				<div className='w-16 h-16 rounded-[22px] bg-grad glow-send flex items-center justify-center rotate-6 mb-1'>
 					<TiMessages className='text-3xl text-white' />
 				</div>
-				<p className='text-lg font-extrabold text-ink tracking-tight'>Welcome, {authUser.fullName} 👋</p>
+				<EmojiText as='p' className='text-lg font-extrabold text-ink tracking-tight'>
+					{`Welcome, ${authUser.fullName} 👋`}
+				</EmojiText>
 				<p className='text-sm text-ink-dim'>Select a chat to start messaging</p>
 			</div>
 		</motion.div>

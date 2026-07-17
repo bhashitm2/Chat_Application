@@ -143,6 +143,16 @@ body {
 	transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease;
 }
 
+/* Twemoji images injected by EmojiText — sized relative to surrounding text
+   so they scale everywhere (previews, bubbles, 44px jumbo, picker grid) */
+img.emoji {
+	display: inline-block;
+	width: 1.22em;
+	height: 1.22em;
+	margin: 0 0.04em;
+	vertical-align: -0.24em;
+}
+
 /* springy hover used across small round buttons */
 .spring {
 	transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.18s ease, color 0.18s ease;

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { IoSearchSharp } from "react-icons/io5";
 import { EMOJI_CATEGORIES, getRecentEmojis, addRecentEmoji } from "../../utils/emojiData";
+import EmojiText from "../EmojiText";
 
 // Anchored panel above the composer's emoji button (design: 340×300, radius 18,
 // footer category strip with a reserved "GIFs & stickers soon" slot).
@@ -78,7 +79,7 @@ const EmojiPicker = ({ onPick, onClose }) => {
 						className='aspect-square rounded-[9px] text-xl flex items-center justify-center hover:bg-surface'
 						title={name}
 					>
-						{emoji}
+						<EmojiText>{emoji}</EmojiText>
 					</motion.button>
 				))}
 				{shown.length === 0 && (
@@ -101,7 +102,7 @@ const EmojiPicker = ({ onPick, onClose }) => {
 					}`}
 					title='Recently used'
 				>
-					🕐
+					<EmojiText>🕐</EmojiText>
 				</button>
 				{EMOJI_CATEGORIES.map((cat) => (
 					<button
@@ -116,7 +117,7 @@ const EmojiPicker = ({ onPick, onClose }) => {
 						}`}
 						title={cat.label}
 					>
-						{cat.icon}
+						<EmojiText>{cat.icon}</EmojiText>
 					</button>
 				))}
 				<span className='ms-auto text-[10.5px] font-semibold text-ink-faint whitespace-nowrap'>

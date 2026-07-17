@@ -4,6 +4,7 @@ import { useAuthContext } from "../../context/AuthContext";
 import useConversation from "../../zustand/useConversation";
 import { resolveAvatar, onAvatarError } from "../../utils/avatar";
 import { extractListTime } from "../../utils/extractTime";
+import EmojiText from "../EmojiText";
 
 const formatDuration = (seconds = 0) => {
 	const m = Math.floor(seconds / 60);
@@ -15,7 +16,7 @@ const Preview = ({ conversation, fromMe, isSelected }) => {
 	const last = conversation.lastMessage;
 	const subColor = isSelected ? "text-white/90" : "text-ink-dim";
 
-	if (!last) return <span className={`text-[13px] ${subColor} truncate`}>Say hi 👋</span>;
+	if (!last) return <EmojiText className={`text-[13px] ${subColor} truncate`}>Say hi 👋</EmojiText>;
 
 	if (last.messageType === "audio") {
 		return (
@@ -38,7 +39,7 @@ const Preview = ({ conversation, fromMe, isSelected }) => {
 			{fromMe && (
 				<BsCheck2All size={14} className={`shrink-0 ${isSelected ? "text-white" : "text-accent"}`} />
 			)}
-			<span className='truncate'>{label}</span>
+			<EmojiText className='truncate'>{label}</EmojiText>
 		</span>
 	);
 };
@@ -78,9 +79,9 @@ const Conversation = ({ conversation }) => {
 
 			<div className='flex-1 min-w-0'>
 				<div className='flex items-center justify-between gap-2'>
-					<span className={`font-bold text-[14.5px] truncate ${isSelected ? "text-white" : "text-ink"}`}>
+					<EmojiText className={`font-bold text-[14.5px] truncate ${isSelected ? "text-white" : "text-ink"}`}>
 						{conversation.fullName}
-					</span>
+					</EmojiText>
 					<span className={`text-[11.5px] flex-none ${isSelected ? "text-white/85" : "text-ink-faint"}`}>
 						{extractListTime(conversation.lastMessage?.createdAt)}
 					</span>

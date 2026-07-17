@@ -7,6 +7,7 @@ import useDeleteMessage from "../../hooks/useDeleteMessage";
 import ConfirmModal from "../ConfirmModal";
 import VoiceNotePlayer from "./VoiceNotePlayer";
 import { resolveAvatar, onAvatarError } from "../../utils/avatar";
+import EmojiText from "../EmojiText";
 
 // read receipts (design: two 1.8px stroke polylines, 16×11)
 const Checks = ({ read }) => (
@@ -118,7 +119,7 @@ const Message = ({ message, lastOfGroup = true }) => {
 			)}
 			{message.message && (
 				<p className={`text-[14.5px] leading-[1.4] ${isMedia ? "px-1 pt-1.5 pb-0.5" : ""}`}>
-					{message.message}
+					<EmojiText>{message.message}</EmojiText>
 					<TimeStamp fromMe={fromMe} message={message} formattedTime={formattedTime} />
 				</p>
 			)}
@@ -136,7 +137,9 @@ const Message = ({ message, lastOfGroup = true }) => {
 			<div className='flex justify-end group'>
 				{deleteButton}
 				{jumbo ? (
-					<div className={`text-[44px] leading-none ${shakeClass}`}>{message.message.trim()}</div>
+					<EmojiText as='div' className={`text-[44px] leading-none ${shakeClass}`}>
+						{message.message.trim()}
+					</EmojiText>
 				) : (
 					<div
 						className={`max-w-[76%] rounded-bubble bg-grad text-out-text shadow-bubble-out ${shakeClass} ${
@@ -176,7 +179,9 @@ const Message = ({ message, lastOfGroup = true }) => {
 				<div className='w-8 flex-none'></div>
 			)}
 			{jumbo ? (
-				<div className={`text-[44px] leading-none ${shakeClass}`}>{message.message.trim()}</div>
+				<EmojiText as='div' className={`text-[44px] leading-none ${shakeClass}`}>
+					{message.message.trim()}
+				</EmojiText>
 			) : (
 				<div
 					className={`max-w-[78%] rounded-bubble bg-in-bubble text-in-text shadow-bubble theme-fade ${shakeClass} ${
